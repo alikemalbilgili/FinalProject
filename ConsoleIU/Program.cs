@@ -12,6 +12,7 @@ namespace ConsoleIU
             //Data Transformaiton Object
             //IoC
             ProductTest();
+            Console.ReadKey();
 
             //CategoryTest();
 
