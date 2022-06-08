@@ -34,9 +34,9 @@ namespace Business.Concrete
         {
             //iş kodları
             //Yetkisi var mı ? ...
-            if (DateTime.Now.Hour == 13)
+            if (DateTime.Now.Hour == 12)
             {
-                return new ErrorDataResult<List<Product>>(_productDal.GetAll(),Messages.MaintenanceTime);
+                return new ErrorDataResult<List<Product>>(null,Messages.MaintenanceTime);
             }
             return new SuccessDataResult<List<Product>>(_productDal.GetAll(),Messages.ProductListed);
 
