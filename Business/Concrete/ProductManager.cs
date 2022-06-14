@@ -1,33 +1,40 @@
-﻿  using System;
-using System.Collections.Generic;
-using Business.Abstract;
+﻿using Business.Abstract;
 using Business.Constants;
 using Business.ValidationRules.FluentValidation;
 using Core.Aspects.Autofac.Validation;
-using Core.CrossCuttingConcerns.Validation;
+using Core.Utilities.Business;
 using Core.Utilities.Results;
 using DataAccess.Abstract;
-using DataAccess.Concrete.InMemory;
 using Entities.Concrete;
 using Entities.DTOs;
-using FluentValidation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Business.Concrete
 {
+    //Bir entity manager kendisi hariç başka bir Dalı enjekte edemez
     public class ProductManager : IProductService
     {
         IProductDal _productDal;
+        ICategoryService _categoryService;
 
-        public ProductManager(IProductDal productDal)
+        public ProductManager(IProductDal productDal,ICategoryService categoryService)
         {
+            _categoryService=categoryService;
             _productDal = productDal;
         }
         [ValidationAspect(typeof(ProductValidator))]
         public IResult Add(Product product)
         {
-            //business codes      
-            //validation
-           // ValidationTool.Validate(new ProductValidator(),product);
+
+            var result = BusinessRules.Run(
+                CheckIfProductCountOfCategoryCorrect(product.CategoryId),
+                CheckIfProductNameExists(product.ProductName));
+            if (result != null)
+            {
+                return result;
+            }
             _productDal.Add(product);
             return new SuccessResult(Messages.ProductAdded);
         }
@@ -38,9 +45,9 @@ namespace Business.Concrete
             //Yetkisi var mı ? ...
             if (DateTime.Now.Hour == 12)
             {
-                return new ErrorDataResult<List<Product>>(null,Messages.MaintenanceTime);
+                return new ErrorDataResult<List<Product>>(null, Messages.MaintenanceTime);
             }
-            return new SuccessDataResult<List<Product>>(_productDal.GetAll(),Messages.ProductListed);
+            return new SuccessDataResult<List<Product>>(_productDal.GetAll(), Messages.ProductListed);
 
         }
 
@@ -63,5 +70,31 @@ namespace Business.Concrete
         {
             return new SuccessDataResult<List<ProductDetailDTo>>(_productDal.GetProductDetails());
         }
+        [ValidationAspect(typeof(ProductValidator))]
+        public IResult Update(Product product)
+        {
+            return new SuccessResult();
+        }
+
+        private IResult CheckIfProductCountOfCategoryCorrect(int categoryId)
+        {
+            //select count(*) from product where categoryId=1
+            var result = _productDal.GetAll(c => c.CategoryId == categoryId);
+            if (result.Count >= 10)
+            {
+                return new ErrorResult("Bu kategoriye 10 dan fazla ürün eklenemez");
+            }
+            return new SuccessResult();
+        }
+        private IResult CheckIfProductNameExists(string productName)
+        {
+            var result = _productDal.GetAll(p => p.ProductName == productName).Any();
+            if (result)
+            {
+                return new ErrorResult();
+            }
+            return new SuccessResult();
+        }
+       
     }
 }
