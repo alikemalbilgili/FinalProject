@@ -4,6 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace WebAPI.Controllers
 {
+
+    [Route("api/[controller]")]
+    [ApiController]
+
     public class CategoriesController : ControllerBase
     {
         private ICategoryService _categoryService;
